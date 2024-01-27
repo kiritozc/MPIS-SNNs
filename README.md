@@ -1,2 +1,2 @@
-For static data, train using "static_code".
-For neural morphology data, train using "neuro_code".
+For static datasets, train/test using "static_code".
+For neuromorphic datasets, train/test using "neuro_code".
