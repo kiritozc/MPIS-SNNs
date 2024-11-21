@@ -44,13 +44,14 @@ class StaticModule(nn.Module):
             z1_f, z1_out = self.snn_func.snn_forward(u_list, time_step, input_type=input_type)
             if self.training:
                 self.snn_func.set_bn_mode_s('train')
-                
                 self.snn_func.restore_bn_statistics_x()
 
+        u_n = torch.zeros([u.shape[0], u.shape[1], u.shape[2] // 2, u.shape[3] // 2]).cuda()
+        u_list = [u, u_n]
+        z1_out_ = self.snn_func.equivalent_func(z1_out, u_list)
+        z1_out = z1_out_
+
         if self.training:
-            u_n = torch.zeros([u.shape[0], u.shape[1], u.shape[2] // 2, u.shape[3] // 2]).cuda()
-            u_list = [u, u_n]
-            z1_out_ = self.snn_func.equivalent_func(z1_out, u_list)
             self.snn_func_copy.copy(self.snn_func)
             self.snn_func_copy.set_bn_mode_s('eval')
 
@@ -61,14 +62,6 @@ class StaticModule(nn.Module):
             z1_out_ = DEQFunc2d.vec2list(z1_out_, cutoffs)
             z1_out = self.Replace.apply(z1_out_, z1_out)
             self.snn_func_copy.set_bn_mode_s('train')
-        else:
-            u_n = torch.zeros([u.shape[0], u.shape[1], u.shape[2] // 2, u.shape[3] // 2]).cuda()
-            u_list = [u, u_n]
-            self.snn_func.set_bn_mode_s('eval')
-            self.snn_func.network_x_list[0].bn.eval()
-            self.snn_func.network_x_list[1].bn.eval()
-            z1_out_ = self.snn_func.equivalent_func(z1_out, u_list)
-            z1_out = z1_out_
 
         return z1_out
 
@@ -177,21 +170,22 @@ class NeuroModule(nn.Module):
                 self.snn_func.set_bn_mode_s('train')
                 self.snn_func.restore_bn_statistics_x()
 
-        if self.training:
-            if leaky == None:
-                u = torch.mean(u, dim=0)
-            else:
-                leaky_ = 1.
-                u_ = u[time_step - 1]
-                for i in range(time_step):
-                    leaky_ *= leaky
-                    u_ += u[time_step - 2 - i] * leaky_
-                u_ /= (1 - leaky_ * leaky) / (1 - leaky)
-                u = u_
-            u_n = torch.zeros([u.shape[0], u.shape[1], u.shape[2] // 2, u.shape[3] // 2]).cuda()
-            u_list = [u, u_n]
-            z1_out_ = self.snn_func.equivalent_func(z1_out, u_list)
+        if leaky == None:
+            u = torch.mean(u, dim=0)
+        else:
+            leaky_ = 1.
+            u_ = u[time_step - 1]
+            for i in range(time_step):
+                leaky_ *= leaky
+                u_ += u[time_step - 2 - i] * leaky_
+            u_ /= (1 - leaky_ * leaky) / (1 - leaky)
+            u = u_
+        u_n = torch.zeros([u.shape[0], u.shape[1], u.shape[2] // 2, u.shape[3] // 2]).cuda()
+        u_list = [u, u_n]
+        z1_out_ = self.snn_func.equivalent_func(z1_out, u_list)
+        z1_out = z1_out_
 
+        if self.training:
             self.snn_func_copy.copy(self.snn_func)
             self.snn_func_copy.set_bn_mode_s('eval')
 
@@ -205,25 +199,6 @@ class NeuroModule(nn.Module):
             z1_out = self.Replace.apply(z1_out_, z1_out)
 
             self.snn_func_copy.set_bn_mode_s('train')
-        else:
-            if leaky == None:
-                u = torch.mean(u, dim=0)
-            else:
-                leaky_ = 1.
-                u_ = u[time_step - 1]
-                for i in range(time_step):
-                    leaky_ *= leaky
-                    u_ += u[time_step - 2 - i] * leaky_
-                u_ /= (1 - leaky_ * leaky) / (1 - leaky)
-                u = u_
-            u_n = torch.zeros([u.shape[0], u.shape[1], u.shape[2] // 2, u.shape[3] // 2]).cuda()
-            u_list = [u, u_n]
-            self.snn_func.set_bn_mode_s('eval')
-            if type(self.snn_func.network_x_list[0]).__name__ != "BasicBlock":
-                self.snn_func.network_x_list[0].bn.eval()
-                self.snn_func.network_x_list[1].bn.eval()
-            z1_out_ = self.snn_func.equivalent_func(z1_out, u_list)
-            z1_out = z1_out_
 
         return z1_out
 

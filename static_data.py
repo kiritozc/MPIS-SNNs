@@ -22,7 +22,7 @@ from utils import Bar, Logger, AverageMeter, accuracy, mkdir_p, savefig
 parser = argparse.ArgumentParser(description='PyTorch CIFAR10/100 SNN Training')
 
 parser.add_argument('-d', '--dataset', default='cifar10', type=str)
-parser.add_argument('--path', default='D:\\datasets\\cifar10', type=str)
+parser.add_argument('--path', default='D:/datasets/', type=str)
 parser.add_argument('-j', '--workers', default=4, type=int, metavar='N',
                     help='number of data loading workers (default: 4)')
 parser.add_argument('-t', '--time_step', default=1, type=int)
